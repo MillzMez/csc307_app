@@ -1,0 +1,95 @@
+import express from "express";
+
+const app = express();
+const port = 8000;
+
+app.use(express.json());
+
+// ---------------- DATA ----------------
+const users = {
+  users_list: [
+    { id: "xyz789", name: "Charlie", job: "Janitor" },
+    { id: "abc123", name: "Mac", job: "Bouncer" },
+    { id: "ppp222", name: "Mac", job: "Professor" },
+    { id: "yat999", name: "Dee", job: "Aspiring actress" },
+    { id: "zap555", name: "Dennis", job: "Bartender" }
+  ]
+};
+
+// ---------------- HELPERS ----------------
+const findUserByName = (name) =>
+  users.users_list.filter((user) => user.name === name);
+
+const findUserById = (id) =>
+  users.users_list.find((user) => user.id === id);
+
+const addUser = (user) => {
+  users.users_list.push(user);
+  return user;
+};
+
+const deleteUserById = (id) => {
+  const index = users.users_list.findIndex(u => u.id === id);
+  if (index !== -1) {
+    return users.users_list.splice(index, 1);
+  }
+  return null;
+};
+
+// ---------------- ROUTES ----------------
+
+// Hello World
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+// Get all users OR filter by name/job
+app.get("/users", (req, res) => {
+  const { name, job } = req.query;
+
+  let result = users.users_list;
+
+  if (name) {
+    result = result.filter(u => u.name === name);
+  }
+
+  if (job) {
+    result = result.filter(u => u.job === job);
+  }
+
+  res.send({ users_list: result });
+});
+
+// Get user by ID
+app.get("/users/:id", (req, res) => {
+  const user = findUserById(req.params.id);
+
+  if (!user) {
+    res.status(404).send("User not found");
+  } else {
+    res.send(user);
+  }
+});
+
+// Add user
+app.post("/users", (req, res) => {
+  const user = req.body;
+  addUser(user);
+  res.send(user);
+});
+
+// DELETE user (required task)
+app.delete("/users/:id", (req, res) => {
+  const deleted = deleteUserById(req.params.id);
+
+  if (!deleted) {
+    res.status(404).send("User not found");
+  } else {
+    res.send("User deleted");
+  }
+});
+
+// ---------------- START SERVER ----------------
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
