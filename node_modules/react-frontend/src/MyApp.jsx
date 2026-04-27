@@ -26,17 +26,26 @@ function MyApp() {
     })
     .catch((error) => console.log(error));
   }*/
- function updateList(person) {
+//  function updateList(person) {
+//   postUser(person)
+//     .then((res) => {
+//       if (res.status !== 201) throw new Error();
+//       return res.json();
+//     })
+//     .then((newUser) => {
+//       setCharacters((prev) => [...prev, newUser]);
+//     })
+//     .catch(console.log);
+// }
+function updateList(person) {
   postUser(person)
-    .then((res) => {
-      if (res.status !== 201) throw new Error();
-      return res.json();
-    })
+    .then((res) => res.json())
     .then((newUser) => {
-      setCharacters((prev) => [...prev, newUser]);
+      setCharacters([...characters, newUser]);
     })
-    .catch(console.log);
+    .catch((error) => console.log(error));
 }
+
 
   function postUser(person) {
   return fetch("http://localhost:8000/users", {

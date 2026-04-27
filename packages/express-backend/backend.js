@@ -1,43 +1,27 @@
+console.log("RUNNING THIS BACKEND FILE");
 import express from "express";
 import cors from "cors";
+
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import userService from "./services/user-service.js";
+
+dotenv.config();
+
+const { MONGO_CONNECTION_STRING } = process.env;
+
+mongoose.set("debug", true);
+
+mongoose
+  .connect(MONGO_CONNECTION_STRING + "users")
+  .then(() => console.log("Connected to MongoDB")) // ✅ added (optional but helpful)
+  .catch((error) => console.log(error));
 
 const app = express();
 const port = 8000;
 
 app.use(cors());
-
 app.use(express.json());
-
-// ---------------- DATA ----------------
-const users = {
-  users_list: [
-    { id: "xyz789", name: "Charlie", job: "Janitor" },
-    { id: "abc123", name: "Mac", job: "Bouncer" },
-    { id: "ppp222", name: "Mac", job: "Professor" },
-    { id: "yat999", name: "Dee", job: "Aspiring actress" },
-    { id: "zap555", name: "Dennis", job: "Bartender" }
-  ]
-};
-
-// ---------------- HELPERS ----------------
-const findUserByName = (name) =>
-  users.users_list.filter((user) => user.name === name);
-
-const findUserById = (id) =>
-  users.users_list.find((user) => user.id === id);
-
-const addUser = (user) => {
-  users.users_list.push(user);
-  return user;
-};
-
-const deleteUserById = (id) => {
-  const index = users.users_list.findIndex(u => u.id === id);
-  if (index !== -1) {
-    return users.users_list.splice(index, 1);
-  }
-  return null;
-};
 
 // ---------------- ROUTES ----------------
 
@@ -46,59 +30,52 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// Get all users OR filter by name/job
+// ✅ Mongo GET
 app.get("/users", (req, res) => {
   const { name, job } = req.query;
 
-  let result = users.users_list;
-
-  if (name) {
-    result = result.filter(u => u.name === name);
-  }
-
-  if (job) {
-    result = result.filter(u => u.job === job);
-  }
-
-  res.send({ users_list: result });
+  userService
+    .getUsers(name, job)
+    .then((users) => res.send({ users_list: users }))
+    .catch((err) => res.status(500).send(err));
 });
 
-// Get user by ID
+// ✅ Mongo GET by ID
 app.get("/users/:id", (req, res) => {
-  const user = findUserById(req.params.id);
-
-  if (!user) {
-    res.status(404).send("User not found");
-  } else {
-    res.send(user);
-  }
+  userService
+    .findUserById(req.params.id)
+    .then((user) => {
+      if (!user) {
+        res.status(404).send("User not found");
+      } else {
+        res.send(user);
+      }
+    })
+    .catch((err) => res.status(500).send(err));
 });
 
-// Add user
-/*app.post("/users", (req, res) => {
-  const user = req.body;
-  addUser(user);
-  res.send(user);
-});*/
+// ✅ Mongo POST
 app.post("/users", (req, res) => {
   const user = req.body;
 
-  user.id = Math.random().toString(36).substring(2, 9);
-
-  addUser(user);
-
-  res.status(201).send(user);
+  userService
+    .addUser(user)
+    .then((newUser) => res.status(201).send(newUser))
+    .catch((err) => res.status(500).send(err));
 });
 
-// DELETE user (required task)
+// ✅ Mongo DELETE
 app.delete("/users/:id", (req, res) => {
-  const deleted = deleteUserById(req.params.id);
-
-  if (!deleted) {
-    res.status(404).send("User not found");
-  } else {
-    res.send("User deleted");
-  }
+  userService
+    .deleteUserById(req.params.id)
+    .then((deleted) => {
+      if (!deleted) {
+        res.status(404).send("User not found");
+      } else {
+        res.status(204).send();
+      }
+    })
+    .catch((err) => res.status(500).send(err));
 });
 
 // ---------------- START SERVER ----------------
